@@ -1,21 +1,28 @@
 alert_id,timestamp,organization_id,service,host,severity,alert_type,metric,value,threshold,message,source,ground_truth_incident_id,is_root_cause_indicator
 ALT-101,2026-09-29T10:02:11Z,ORG-A,PostgreSQL Database,pg-primary-01,CRITICAL,RESOURCE_EXHAUSTION,connection_pool_utilization,98.0,90.0,Database connection pool exhausted on primary instance,Prometheus,INC-001,true
+ALT-101-DUP,2026-09-29T10:02:13Z,ORG-A,PostgreSQL Database,pg-primary-01,CRITICAL,RESOURCE_EXHAUSTION,connection_pool_utilization,99.0,90.0,Duplicate: connection pool saturated (secondary probe),Nagios,INC-001,true
 ALT-102,2026-09-29T10:02:18Z,ORG-A,PostgreSQL Database,pg-primary-01,CRITICAL,LATENCY,disk_io_wait_ms,340.0,120.0,Database storage I/O wait latency critical,Prometheus,INC-001,true
 ALT-103,2026-09-29T10:02:22Z,ORG-A,Emergency Data Service,eds-prod-app-03,HIGH,ERROR_RATE,query_timeout_pct,46.5,5.0,High database query timeout percentage on shelter query endpoint,Datadog,INC-001,false
 ALT-104,2026-09-29T10:02:25Z,ORG-A,Emergency Data Service,eds-prod-app-01,HIGH,LATENCY,p99_response_ms,4200.0,800.0,Emergency data service p99 latency breached SLA,Datadog,INC-001,false
 ALT-105,2026-09-29T10:02:29Z,ORG-A,API Gateway,gw-edge-02,CRITICAL,ERROR_RATE,http_5xx_rate_pct,35.2,2.0,HTTP 5xx error rate spike on /api/v1/evacuation-zones,EnvoyMetrics,INC-001,false
+ALT-105-DUP,2026-09-29T10:02:30Z,ORG-A,API Gateway,gw-edge-02,CRITICAL,ERROR_RATE,http_5xx_rate_pct,36.0,2.0,Duplicate: ingress HTTP 504 threshold exceeded,CloudWatch,INC-001,false
 ALT-106,2026-09-29T10:02:31Z,ORG-A,API Gateway,gw-edge-01,HIGH,LATENCY,upstream_connect_timeout_count,142.0,10.0,Upstream connection timeouts to Emergency Data Service,EnvoyMetrics,INC-001,false
 ALT-107,2026-09-29T10:02:34Z,ORG-A,Web Frontend,web-node-04,HIGH,LATENCY,client_p95_latency_ms,5100.0,1200.0,Web frontend client p95 latency degraded,Synthetics,INC-001,false
 ALT-108,2026-09-29T10:02:40Z,ORG-A,Web Frontend,web-node-02,CRITICAL,ERROR_RATE,client_http_504_count,89.0,5.0,Web frontend gateway timeout 504 errors on public homepage,Synthetics,INC-001,false
-ALT-201,2026-09-29T10:15:05Z,ORG-B,CDN,cdn-pop-east-1,HIGH,LATENCY,origin_fetch_latency_ms,2850.0,400.0,CDN origin fetch round-trip latency spike in US-East,CloudflareMonitor,INC-002,true
-ALT-202,2026-09-29T10:15:19Z,ORG-B,CDN,cdn-pop-east-2,HIGH,ERROR_RATE,edge_cache_miss_pct,92.4,30.0,CDN edge cache miss rate spike following invalidation wave,CloudflareMonitor,INC-002,true
+ALT-201,2026-09-29T10:15:05Z,ORG-C,CDN,cdn-pop-east-1,HIGH,LATENCY,origin_fetch_latency_ms,2850.0,400.0,CDN origin fetch round-trip latency spike in US-East,CloudflareMonitor,INC-002,true
+ALT-201-DUP,2026-09-29T10:15:08Z,ORG-C,CDN,cdn-pop-east-1,HIGH,LATENCY,origin_fetch_latency_ms,2920.0,400.0,Duplicate: Edge PoP US-East origin probe latency,FastlyAgent,INC-002,true
+ALT-202,2026-09-29T10:15:19Z,ORG-C,CDN,cdn-pop-east-2,HIGH,ERROR_RATE,edge_cache_miss_pct,92.4,30.0,CDN edge cache miss rate spike following invalidation wave,CloudflareMonitor,INC-002,true
 ALT-203,2026-09-29T10:15:32Z,ORG-B,Load Balancer,lb-core-01,HIGH,LATENCY,backend_queue_depth,450.0,50.0,Load balancer backend queue depth overload from uncached requests,HAProxy,INC-002,false
 ALT-204,2026-09-29T10:15:44Z,ORG-A,Web Frontend,web-node-01,MEDIUM,LATENCY,static_asset_ttfb_ms,3900.0,800.0,Static asset time-to-first-byte latency high on map tiles,Synthetics,INC-002,false
-ALT-301,2026-09-29T10:28:10Z,ORG-C,Message Queue,mq-broker-02,CRITICAL,RESOURCE_EXHAUSTION,consumer_lag_records,48200.0,5000.0,Message queue partition lag critical on emergency-sms topic,KafkaMetrics,INC-003,true
-ALT-302,2026-09-29T10:28:24Z,ORG-C,Message Queue,mq-broker-02,HIGH,METRIC_ANOMALY,under_replicated_partitions,3.0,0.0,Broker under-replicated partition count elevated,KafkaMetrics,INC-003,true
+ALT-301,2026-09-29T10:28:10Z,ORG-D,Message Queue,mq-broker-02,CRITICAL,RESOURCE_EXHAUSTION,consumer_lag_records,48200.0,5000.0,Message queue partition lag critical on emergency-sms topic,KafkaMetrics,INC-003,true
+ALT-302,2026-09-29T10:28:24Z,ORG-D,Message Queue,mq-broker-02,HIGH,METRIC_ANOMALY,under_replicated_partitions,3.0,0.0,Broker under-replicated partition count elevated,KafkaMetrics,INC-003,true
 ALT-303,2026-09-29T10:28:38Z,ORG-A,Notification Service,notif-worker-01,HIGH,RESOURCE_EXHAUSTION,buffer_capacity_pct,92.5,75.0,Notification service dispatch queue buffer near capacity,Prometheus,INC-003,false
-ALT-304,2026-09-29T10:29:04Z,ORG-C,External SMS Provider,sms-gw-01,CRITICAL,LATENCY,delivery_ack_latency_sec,260.0,30.0,External SMS carrier dispatch latency exceeded SLA window,TwilioWebhook,INC-003,false
+ALT-304,2026-09-29T10:29:04Z,ORG-D,External SMS Provider,sms-gw-01,CRITICAL,LATENCY,delivery_ack_latency_sec,260.0,30.0,External SMS carrier dispatch latency exceeded SLA window,TwilioWebhook,INC-003,false
+ALT-401,2026-09-29T10:03:30Z,ORG-A,Redis Cache,redis-cache-01,CRITICAL,RESOURCE_EXHAUSTION,used_memory_pct,96.8,85.0,Redis memory limit reached - aggressive key evictions triggering cache thrashing,RedisInsight,INC-004,true
+ALT-402,2026-09-29T10:03:38Z,ORG-A,Authentication Service,auth-svc-01,HIGH,LATENCY,token_validation_latency_ms,1850.0,200.0,Authentication service token lookup latency elevated due to cache misses,AppMetrics,INC-004,false
+ALT-403,2026-09-29T10:03:45Z,ORG-A,Authentication Service,auth-svc-02,HIGH,ERROR_RATE,auth_failure_rate_pct,28.4,3.0,Session authentication verification failure rate spike,AuthGuard,INC-004,false
 ALT-901,2026-09-29T10:04:15Z,ORG-A,Authentication Service,auth-svc-02,LOW,METRIC_ANOMALY,rate_limit_hits_sec,18.0,15.0,Routine rate limit throttling for single IP crawl bot,AuthGuard,NOISE,false
 ALT-902,2026-09-29T10:16:40Z,ORG-A,User Service,user-svc-01,LOW,RESOURCE_EXHAUSTION,jvm_heap_pct,78.2,75.0,User service minor GC pause during scheduled batch sync,Prometheus,NOISE,false
 ALT-903,2026-09-29T10:25:00Z,ORG-A,Redis Cache,redis-cache-01,LOW,METRIC_ANOMALY,evicted_keys_rate,45.0,40.0,Redis volatile key eviction count slightly above background threshold,RedisInsight,NOISE,false
 ALT-904,2026-09-29T10:31:12Z,ORG-A,Alert Service,alert-svc-01,LOW,LATENCY,webhook_delivery_latency_ms,410.0,350.0,Minor latency jitter on internal telemetry ingest webhook,Datadog,NOISE,false
+ALT-905,2026-09-29T10:12:00Z,ORG-A,User Service,user-svc-02,LOW,METRIC_ANOMALY,cpu_usage_pct,68.0,80.0,Routine scheduled backup compression CPU increase,SystemMonitor,NOISE,false
