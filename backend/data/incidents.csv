@@ -1,0 +1,15 @@
+incident_id,timestamp,event_type,service,description,source,severity,ground_truth_root_cause,organization_id
+INC-001,2026-09-29T10:02:11Z,METRIC_ANOMALY,PostgreSQL Database,Storage engine I/O saturation and active connections reached max pool (98/100),DatabaseMonitor,CRITICAL,PostgreSQL Database,ORG-A
+INC-001,2026-09-29T10:02:17Z,STATE_CHANGE,PostgreSQL Database,Database connection pool exhausted - rejecting new client handshakes,PostgreSQL,CRITICAL,PostgreSQL Database,ORG-A
+INC-001,2026-09-29T10:02:22Z,METRIC_ANOMALY,Emergency Data Service,Database client query timeout rate exceeds 45%,AppMetrics,HIGH,PostgreSQL Database,ORG-A
+INC-001,2026-09-29T10:02:29Z,METRIC_ANOMALY,API Gateway,HTTP 5xx rate jumped to 34% on /api/v1/evacuation-zones,GatewayMetrics,CRITICAL,PostgreSQL Database,ORG-A
+INC-001,2026-09-29T10:02:34Z,METRIC_ANOMALY,Web Frontend,Frontend client timeout alerts increased across emergency public portal,SyntheticsCheck,HIGH,PostgreSQL Database,ORG-A
+INC-001,2026-09-29T10:02:41Z,USER_IMPACT,Web Frontend,Public emergency portal displays degraded advisory banner and 504 errors,HealthWatch,CRITICAL,PostgreSQL Database,ORG-A
+INC-002,2026-09-29T10:15:05Z,METRIC_ANOMALY,CDN,Origin shield latency elevated in region us-east edge PoPs,EdgeMonitor,HIGH,CDN,ORG-B
+INC-002,2026-09-29T10:15:18Z,STATE_CHANGE,CDN,Edge cache eviction storm triggered by invalidation broadcast,EdgeController,HIGH,CDN,ORG-B
+INC-002,2026-09-29T10:15:32Z,METRIC_ANOMALY,Load Balancer,Uncached request spike increased proxy queue latency to 1850ms,LBTelemetry,HIGH,CDN,ORG-B
+INC-002,2026-09-29T10:15:45Z,USER_IMPACT,Web Frontend,Asset load time p99 exceeded 4.2s for public shelter maps,SyntheticsCheck,MEDIUM,CDN,ORG-A
+INC-003,2026-09-29T10:28:10Z,METRIC_ANOMALY,Message Queue,Partition 4 consumer lag spiked to 48,200 messages,QueueMonitor,CRITICAL,Message Queue,ORG-C
+INC-003,2026-09-29T10:28:25Z,STATE_CHANGE,Message Queue,Broker leader partition out-of-sync replicas detected,QueueBroker,HIGH,Message Queue,ORG-C
+INC-003,2026-09-29T10:28:40Z,METRIC_ANOMALY,Notification Service,SMS dispatch queue backpressure buffer capacity reached 92%,NotificationEngine,HIGH,Message Queue,ORG-A
+INC-003,2026-09-29T10:29:05Z,USER_IMPACT,External SMS Provider,Carrier queue submission SLA breach: delivery delay exceeds 4 minutes,ProviderGateway,CRITICAL,Message Queue,ORG-C

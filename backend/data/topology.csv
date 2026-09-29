@@ -1,0 +1,17 @@
+source_service,target_service,dependency_type,criticality
+CDN,Load Balancer,network,critical
+Load Balancer,Web Frontend,network,critical
+Load Balancer,API Gateway,network,critical
+Web Frontend,API Gateway,http,critical
+API Gateway,Authentication Service,http,high
+API Gateway,User Service,http,medium
+API Gateway,Emergency Data Service,http,critical
+API Gateway,Alert Service,http,high
+API Gateway,Redis Cache,cache,high
+Emergency Data Service,PostgreSQL Database,database,critical
+Emergency Data Service,Redis Cache,cache,high
+Alert Service,Emergency Data Service,http,high
+Alert Service,Notification Service,http,high
+Notification Service,Message Queue,queue,critical
+Message Queue,External SMS Provider,external_api,critical
+Message Queue,External Email Provider,external_api,medium

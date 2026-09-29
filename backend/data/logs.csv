@@ -1,0 +1,17 @@
+log_id,timestamp,organization_id,service,host,level,message,trace_id,request_id,ground_truth_incident_id
+LOG-101,2026-09-29T10:02:12Z,ORG-A,PostgreSQL Database,pg-primary-01,FATAL,"FATAL: remaining connection slots are reserved for non-replication superuser connections (max_connections=100 reached)",TRC-2001,REQ-8801,INC-001
+LOG-102,2026-09-29T10:02:19Z,ORG-A,PostgreSQL Database,pg-primary-01,ERROR,"ERROR: could not obtain lock on relation public.evacuation_shelters: statement timeout",TRC-2001,REQ-8802,INC-001
+LOG-103,2026-09-29T10:02:23Z,ORG-A,Emergency Data Service,eds-prod-app-03,ERROR,"ConnectionPoolTimeoutException: Timeout waiting for idle connection from pool after 5000ms",TRC-2001,REQ-8803,INC-001
+LOG-104,2026-09-29T10:02:30Z,ORG-A,API Gateway,gw-edge-02,ERROR,"HTTP 504 Gateway Timeout while proxying request to upstream emergency-data-service:8080",TRC-2001,REQ-8804,INC-001
+LOG-105,2026-09-29T10:02:36Z,ORG-A,Web Frontend,web-node-04,WARN,"SSR hydration failed for /shelter-finder: upstream JSON response was 504 Gateway Timeout",TRC-2001,REQ-8805,INC-001
+LOG-201,2026-09-29T10:15:06Z,ORG-B,CDN,cdn-pop-east-1,WARN,"Origin shield request failed with 502 Bad Gateway to origin lb-core-01",TRC-3001,REQ-9901,INC-002
+LOG-202,2026-09-29T10:15:20Z,ORG-B,CDN,cdn-pop-east-2,WARN,"Purge event trigger evicted 12,400 static assets for tenant org-a",TRC-3001,REQ-9902,INC-002
+LOG-203,2026-09-29T10:15:33Z,ORG-B,Load Balancer,lb-core-01,ERROR,"Queue limit reached on backend pool web_frontend_cluster (conns=2000)",TRC-3001,REQ-9903,INC-002
+LOG-204,2026-09-29T10:15:46Z,ORG-A,Web Frontend,web-node-01,WARN,"Client TTFB high on /assets/maps/district-3.svg (duration=3920ms)",TRC-3001,REQ-9904,INC-002
+LOG-301,2026-09-29T10:28:12Z,ORG-C,Message Queue,mq-broker-02,ERROR,"KafkaStorageException: Disk write stall detected on broker partition topic emergency-sms-4",TRC-4001,REQ-7701,INC-003
+LOG-302,2026-09-29T10:28:26Z,ORG-C,Message Queue,mq-broker-02,WARN,"ReplicaManager: Broker 2 failed to update ISR for partition emergency-sms-4",TRC-4001,REQ-7702,INC-003
+LOG-303,2026-09-29T10:28:42Z,ORG-A,Notification Service,notif-worker-01,ERROR,"ProducerQueueFull: Buffer is full (capacity=50000), backpressure rejecting new broadcast dispatches",TRC-4001,REQ-7703,INC-003
+LOG-304,2026-09-29T10:29:06Z,ORG-C,External SMS Provider,sms-gw-01,WARN,"CarrierGatewayTimeout: Upstream aggregator ACK delayed past 180s for batch ID batch-9921",TRC-4001,REQ-7704,INC-003
+LOG-901,2026-09-29T10:04:16Z,ORG-A,Authentication Service,auth-svc-02,INFO,"Rate limiter applied 429 Too Many Requests to client ip 198.51.100.44",TRC-9001,REQ-1001,NOISE
+LOG-902,2026-09-29T10:16:42Z,ORG-A,User Service,user-svc-01,INFO,"Batch user preference synchronization completed in 420ms",TRC-9002,REQ-1002,NOISE
+LOG-903,2026-09-29T10:25:01Z,ORG-A,Redis Cache,redis-cache-01,INFO,"LRU key eviction reclaimed 1024 expired session keys",TRC-9003,REQ-1003,NOISE

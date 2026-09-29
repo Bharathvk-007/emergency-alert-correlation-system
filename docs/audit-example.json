@@ -1,0 +1,154 @@
+{
+  "audit_version": "1.0.0",
+  "export_timestamp": "2026-09-29T10:35:00Z",
+  "incident_id": "INC-001",
+  "organization_id": "ORG-A",
+  "title": "PostgreSQL Connection Pool Exhaustion Triggering Cascading Public Portal 504 Timeouts",
+  "status": "CONFIRMED",
+  "system_version": "Emergency-Correlation-Core v0.3.5",
+  "observed_facts": {
+    "affected_services": [
+      "PostgreSQL Database",
+      "Emergency Data Service",
+      "API Gateway",
+      "Web Frontend"
+    ],
+    "earliest_detected_event": {
+      "timestamp": "2026-09-29T10:02:11Z",
+      "service": "PostgreSQL Database",
+      "alert_id": "ALT-101",
+      "metric": "connection_pool_utilization",
+      "value": 98.0,
+      "threshold": 90.0
+    },
+    "alert_evidence": [
+      {
+        "alert_id": "ALT-101",
+        "timestamp": "2026-09-29T10:02:11Z",
+        "service": "PostgreSQL Database",
+        "severity": "CRITICAL",
+        "message": "Database connection pool exhausted on primary instance"
+      },
+      {
+        "alert_id": "ALT-102",
+        "timestamp": "2026-09-29T10:02:18Z",
+        "service": "PostgreSQL Database",
+        "severity": "CRITICAL",
+        "message": "Database storage I/O wait latency critical"
+      },
+      {
+        "alert_id": "ALT-103",
+        "timestamp": "2026-09-29T10:02:22Z",
+        "service": "Emergency Data Service",
+        "severity": "HIGH",
+        "message": "High database query timeout percentage on shelter query endpoint"
+      },
+      {
+        "alert_id": "ALT-105",
+        "timestamp": "2026-09-29T10:02:29Z",
+        "service": "API Gateway",
+        "severity": "CRITICAL",
+        "message": "HTTP 5xx error rate spike on /api/v1/evacuation-zones"
+      },
+      {
+        "alert_id": "ALT-108",
+        "timestamp": "2026-09-29T10:02:40Z",
+        "service": "Web Frontend",
+        "severity": "CRITICAL",
+        "message": "Web frontend gateway timeout 504 errors on public homepage"
+      }
+    ],
+    "log_evidence": [
+      {
+        "log_id": "LOG-101",
+        "timestamp": "2026-09-29T10:02:12Z",
+        "service": "PostgreSQL Database",
+        "level": "FATAL",
+        "message": "FATAL: remaining connection slots are reserved for non-replication superuser connections (max_connections=100 reached)"
+      },
+      {
+        "log_id": "LOG-103",
+        "timestamp": "2026-09-29T10:02:23Z",
+        "service": "Emergency Data Service",
+        "level": "ERROR",
+        "message": "ConnectionPoolTimeoutException: Timeout waiting for idle connection from pool after 5000ms"
+      },
+      {
+        "log_id": "LOG-104",
+        "timestamp": "2026-09-29T10:02:30Z",
+        "service": "API Gateway",
+        "level": "ERROR",
+        "message": "HTTP 504 Gateway Timeout while proxying request to upstream emergency-data-service:8080"
+      }
+    ],
+    "trace_evidence": [
+      {
+        "trace_id": "TRC-2001",
+        "root_operation": "SSR /shelter-finder",
+        "total_duration_ms": 5800,
+        "failed_span_service": "PostgreSQL Database",
+        "failed_span_operation": "SELECT * FROM evacuation_shelters WHERE active = true"
+      }
+    ],
+    "active_topology_path": [
+      "PostgreSQL Database",
+      "Emergency Data Service",
+      "API Gateway",
+      "Web Frontend"
+    ]
+  },
+  "system_inferences": {
+    "correlation_summary": "Incident INC-001 was grouped because alerts ALT-101 through ALT-108 occurred within the configured 180s temporal window and involve services connected through the service dependency topology graph. PostgreSQL Database was identified as the leading candidate root cause because its resource saturation indicators preceded downstream API Gateway and Web Frontend failures by 18 to 29 seconds.",
+    "symptoms_identified": [
+      "API Gateway 5xx spike (35.2% error rate)",
+      "Web Frontend client timeout alerts increased",
+      "Emergency Data Service query timeout rate elevated",
+      "Public evacuation zone endpoint returning 504 status"
+    ],
+    "probable_root_cause_candidates": [
+      {
+        "candidate": "PostgreSQL Database",
+        "score": 0.94,
+        "confidence_level": "HIGH",
+        "reasoning": "Earliest failure timestamp (10:02:11Z), root dependency in topology path, accompanied by FATAL connection exhaustion log (LOG-101) and trace error span (TRC-2001)."
+      },
+      {
+        "candidate": "Emergency Data Service",
+        "score": 0.42,
+        "confidence_level": "MEDIUM_LOW",
+        "reasoning": "Intermediate hop showing query timeouts, but timestamps (10:02:22Z) show failure commenced after database exhaustion."
+      },
+      {
+        "candidate": "API Gateway",
+        "score": 0.28,
+        "confidence_level": "LOW",
+        "reasoning": "Purely symptomatic reverse-proxy timeout breaches triggered by stalled upstream responses."
+      }
+    ],
+    "provenance_trace_link": "INC-001 -> [ALT-101..108] -> TRC-2001 -> [LOG-101..105] -> Path(PostgreSQL->EDS->Gateway->Web)",
+    "overall_system_confidence": 0.95
+  },
+  "telemetry_provenance_metadata": {
+    "data_sources_available": {
+      "alerts": true,
+      "logs": true,
+      "traces": true,
+      "topology": true,
+      "timeline": true
+    },
+    "missing_or_delayed_sources": [],
+    "applied_weights": {
+      "time_proximity": 0.25,
+      "service_relation": 0.20,
+      "topology": 0.20,
+      "trace": 0.15,
+      "log": 0.10,
+      "severity": 0.10
+    },
+    "evaluation_flags": {
+      "is_synthetic_benchmark": true,
+      "matches_ground_truth_incident": true,
+      "matches_ground_truth_root_cause": true
+    }
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "name": "Emergency Alert Correlation System",
+  "description": "Explainable multi-source alert correlation, root-cause candidate ranking, and dependency topology for public emergency-information platforms.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

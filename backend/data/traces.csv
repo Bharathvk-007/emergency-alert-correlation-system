@@ -1,0 +1,14 @@
+trace_id,timestamp,organization_id,service,operation,duration_ms,status,parent_service,downstream_service,ground_truth_incident_id
+TRC-2001,2026-09-29T10:02:11Z,ORG-A,PostgreSQL Database,SELECT * FROM evacuation_shelters WHERE active = true,5200,ERROR,Emergency Data Service,none,INC-001
+TRC-2001,2026-09-29T10:02:22Z,ORG-A,Emergency Data Service,GET /v1/shelters/active,5420,ERROR,API Gateway,PostgreSQL Database,INC-001
+TRC-2001,2026-09-29T10:02:29Z,ORG-A,API Gateway,GET /api/v1/evacuation-zones,5650,ERROR,Web Frontend,Emergency Data Service,INC-001
+TRC-2001,2026-09-29T10:02:34Z,ORG-A,Web Frontend,SSR /shelter-finder,5800,ERROR,Load Balancer,API Gateway,INC-001
+TRC-3001,2026-09-29T10:15:05Z,ORG-B,CDN,EDGE_FETCH /assets/maps/district-3.svg,2900,WARN,Load Balancer,none,INC-002
+TRC-3001,2026-09-29T10:15:32Z,ORG-B,Load Balancer,PROXY /assets/maps/*,3100,WARN,CDN,Web Frontend,INC-002
+TRC-3001,2026-09-29T10:15:45Z,ORG-A,Web Frontend,STATIC_SERVE /maps/district-3.svg,3920,WARN,Load Balancer,none,INC-002
+TRC-4001,2026-09-29T10:28:10Z,ORG-C,Message Queue,PRODUCE_RECORD emergency-sms-4,8400,ERROR,Notification Service,none,INC-003
+TRC-4001,2026-09-29T10:28:38Z,ORG-A,Notification Service,DISPATCH_SMS_ALERT,8600,ERROR,Alert Service,Message Queue,INC-003
+TRC-4001,2026-09-29T10:29:04Z,ORG-C,External SMS Provider,HTTP_POST /v1/Messages,12000,TIMEOUT,Notification Service,none,INC-003
+TRC-9001,2026-09-29T10:04:15Z,ORG-A,Authentication Service,POST /auth/verify,25,OK,API Gateway,none,NOISE
+TRC-9002,2026-09-29T10:16:40Z,ORG-A,User Service,GET /users/preferences,45,OK,API Gateway,PostgreSQL Database,NOISE
+TRC-9003,2026-09-29T10:25:00Z,ORG-A,Redis Cache,GET session:cache:active,4,OK,API Gateway,none,NOISE
