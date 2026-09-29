@@ -5,6 +5,7 @@ import {
   TopologyEdge,
   TimelineEvent,
   Organization,
+  StakeholderQuestionnaireResponse,
 } from '../types';
 
 export const ORGANIZATIONS: Organization[] = [
@@ -28,18 +29,26 @@ export const ORGANIZATIONS: Organization[] = [
   },
   {
     id: 'ORG-B',
-    name: 'Cloud Infrastructure & CDN Provider',
-    type: 'Edge & Network Infrastructure Partner',
+    name: 'Cloud Infrastructure Provider',
+    type: 'Core Cloud Infrastructure Partner',
     description:
-      'Global edge distribution network, origin shield caches, and ingress load balancers.',
-    services: ['CDN', 'Load Balancer'],
+      'Core cloud compute clusters, host hypervisors, and private cloud networking.',
+    services: ['Load Balancer', 'API Gateway'],
   },
   {
     id: 'ORG-C',
-    name: 'Emergency Telecom & Carrier Partner',
-    type: 'Communications Infrastructure Partner',
+    name: 'CDN & Network Partner',
+    type: 'Edge & Network Infrastructure Partner',
     description:
-      'Message queue brokers and carrier-grade SMS/Email emergency broadcast pipelines.',
+      'Global edge distribution network, origin shield caches, and anycast DNS.',
+    services: ['CDN', 'Load Balancer'],
+  },
+  {
+    id: 'ORG-D',
+    name: 'External Communication Provider',
+    type: 'Emergency Telecom & Carrier Partner',
+    description:
+      'Carrier-grade SMS/Email emergency broadcast pipelines, telephony gateways, and message brokers.',
     services: ['Message Queue', 'External SMS Provider', 'External Email Provider'],
   },
 ];
@@ -175,11 +184,11 @@ export const RAW_ALERTS: RawAlert[] = [
     is_root_cause_indicator: false,
   },
 
-  // Incident 2: CDN edge route degradation causing increased latency (ORG-B)
+  // Incident 2: CDN edge route degradation causing increased latency (ORG-C)
   {
     alert_id: 'ALT-201',
     timestamp: '2026-09-29T10:15:05Z',
-    organization_id: 'ORG-B',
+    organization_id: 'ORG-C',
     service: 'CDN',
     host: 'cdn-pop-east-1',
     severity: 'HIGH',
@@ -195,7 +204,7 @@ export const RAW_ALERTS: RawAlert[] = [
   {
     alert_id: 'ALT-202',
     timestamp: '2026-09-29T10:15:19Z',
-    organization_id: 'ORG-B',
+    organization_id: 'ORG-C',
     service: 'CDN',
     host: 'cdn-pop-east-2',
     severity: 'HIGH',
@@ -241,11 +250,11 @@ export const RAW_ALERTS: RawAlert[] = [
     is_root_cause_indicator: false,
   },
 
-  // Incident 3: Message queue problem causing notification delays (ORG-C)
+  // Incident 3: Message queue problem causing notification delays (ORG-D)
   {
     alert_id: 'ALT-301',
     timestamp: '2026-09-29T10:28:10Z',
-    organization_id: 'ORG-C',
+    organization_id: 'ORG-D',
     service: 'Message Queue',
     host: 'mq-broker-02',
     severity: 'CRITICAL',
@@ -261,7 +270,7 @@ export const RAW_ALERTS: RawAlert[] = [
   {
     alert_id: 'ALT-302',
     timestamp: '2026-09-29T10:28:24Z',
-    organization_id: 'ORG-C',
+    organization_id: 'ORG-D',
     service: 'Message Queue',
     host: 'mq-broker-02',
     severity: 'HIGH',
@@ -293,7 +302,7 @@ export const RAW_ALERTS: RawAlert[] = [
   {
     alert_id: 'ALT-304',
     timestamp: '2026-09-29T10:29:04Z',
-    organization_id: 'ORG-C',
+    organization_id: 'ORG-D',
     service: 'External SMS Provider',
     host: 'sms-gw-01',
     severity: 'CRITICAL',
@@ -444,7 +453,7 @@ export const LOG_RECORDS: LogRecord[] = [
   {
     log_id: 'LOG-201',
     timestamp: '2026-09-29T10:15:06Z',
-    organization_id: 'ORG-B',
+    organization_id: 'ORG-C',
     service: 'CDN',
     host: 'cdn-pop-east-1',
     level: 'WARN',
@@ -456,7 +465,7 @@ export const LOG_RECORDS: LogRecord[] = [
   {
     log_id: 'LOG-202',
     timestamp: '2026-09-29T10:15:20Z',
-    organization_id: 'ORG-B',
+    organization_id: 'ORG-C',
     service: 'CDN',
     host: 'cdn-pop-east-2',
     level: 'WARN',
@@ -493,7 +502,7 @@ export const LOG_RECORDS: LogRecord[] = [
   {
     log_id: 'LOG-301',
     timestamp: '2026-09-29T10:28:12Z',
-    organization_id: 'ORG-C',
+    organization_id: 'ORG-D',
     service: 'Message Queue',
     host: 'mq-broker-02',
     level: 'FATAL',
@@ -506,7 +515,7 @@ export const LOG_RECORDS: LogRecord[] = [
   {
     log_id: 'LOG-302',
     timestamp: '2026-09-29T10:28:26Z',
-    organization_id: 'ORG-C',
+    organization_id: 'ORG-D',
     service: 'Message Queue',
     host: 'mq-broker-02',
     level: 'WARN',
@@ -531,7 +540,7 @@ export const LOG_RECORDS: LogRecord[] = [
   {
     log_id: 'LOG-304',
     timestamp: '2026-09-29T10:29:06Z',
-    organization_id: 'ORG-C',
+    organization_id: 'ORG-D',
     service: 'External SMS Provider',
     host: 'sms-gw-01',
     level: 'WARN',
@@ -595,7 +604,7 @@ export const TRACE_SPANS: TraceSpan[] = [
   {
     trace_id: 'TRC-3001',
     timestamp: '2026-09-29T10:15:05Z',
-    organization_id: 'ORG-B',
+    organization_id: 'ORG-C',
     service: 'CDN',
     operation: 'EDGE_FETCH /assets/maps/district-3.svg',
     duration_ms: 2900,
@@ -632,7 +641,7 @@ export const TRACE_SPANS: TraceSpan[] = [
   {
     trace_id: 'TRC-4001',
     timestamp: '2026-09-29T10:28:10Z',
-    organization_id: 'ORG-C',
+    organization_id: 'ORG-D',
     service: 'Message Queue',
     operation: 'PRODUCE_RECORD emergency-sms-4',
     duration_ms: 8400,
@@ -656,7 +665,7 @@ export const TRACE_SPANS: TraceSpan[] = [
   {
     trace_id: 'TRC-4001',
     timestamp: '2026-09-29T10:29:04Z',
-    organization_id: 'ORG-C',
+    organization_id: 'ORG-D',
     service: 'External SMS Provider',
     operation: 'HTTP_POST /v1/Messages',
     duration_ms: 12000,
@@ -763,7 +772,7 @@ export const TIMELINE_EVENTS: TimelineEvent[] = [
     source: 'EdgeMonitor',
     severity: 'HIGH',
     ground_truth_root_cause: 'CDN',
-    organization_id: 'ORG-B',
+    organization_id: 'ORG-C',
   },
   {
     incident_id: 'INC-002',
@@ -774,7 +783,7 @@ export const TIMELINE_EVENTS: TimelineEvent[] = [
     source: 'EdgeController',
     severity: 'HIGH',
     ground_truth_root_cause: 'CDN',
-    organization_id: 'ORG-B',
+    organization_id: 'ORG-C',
   },
   {
     incident_id: 'INC-002',
@@ -808,7 +817,7 @@ export const TIMELINE_EVENTS: TimelineEvent[] = [
     source: 'QueueMonitor',
     severity: 'CRITICAL',
     ground_truth_root_cause: 'Message Queue',
-    organization_id: 'ORG-C',
+    organization_id: 'ORG-D',
   },
   {
     incident_id: 'INC-003',
@@ -819,7 +828,7 @@ export const TIMELINE_EVENTS: TimelineEvent[] = [
     source: 'QueueBroker',
     severity: 'HIGH',
     ground_truth_root_cause: 'Message Queue',
-    organization_id: 'ORG-C',
+    organization_id: 'ORG-D',
   },
   {
     incident_id: 'INC-003',
@@ -841,6 +850,98 @@ export const TIMELINE_EVENTS: TimelineEvent[] = [
     source: 'ProviderGateway',
     severity: 'CRITICAL',
     ground_truth_root_cause: 'Message Queue',
-    organization_id: 'ORG-C',
+    organization_id: 'ORG-D',
+  },
+];
+
+// Historical disaster incidents for similarity scoring
+export const HISTORICAL_INCIDENTS = [
+  {
+    id: 'HIST-2024-HURRICANE',
+    name: 'Hurricane Laura Public Ingress Load Spike',
+    trigger_service: 'PostgreSQL Database',
+    cascade_services: ['Emergency Data Service', 'API Gateway', 'Web Frontend'],
+    signature: 'CONNECTION_POOL_EXHAUSTION',
+    similarity_weight: 0.92,
+  },
+  {
+    id: 'HIST-2025-WILDFIRE',
+    name: 'Regional Wildfire Map Invalidation Storm',
+    trigger_service: 'CDN',
+    cascade_services: ['Load Balancer', 'Web Frontend'],
+    signature: 'EDGE_CACHE_MISS_SPIKE',
+    similarity_weight: 0.88,
+  },
+  {
+    id: 'HIST-2025-FLOOD-ALERT',
+    name: 'Flash Flood Mass Evacuation SMS Backpressure',
+    trigger_service: 'Message Queue',
+    cascade_services: ['Notification Service', 'External SMS Provider'],
+    signature: 'BROKER_PARTITION_LAG',
+    similarity_weight: 0.90,
+  },
+];
+
+// Sample stakeholder validation responses
+export const SAMPLE_STAKEHOLDER_RESPONSES: StakeholderQuestionnaireResponse[] = [
+  {
+    role: 'SRE_ENGINEER',
+    respondent_name: 'Alex Rivera (Staff SRE)',
+    organization: 'ORG-A',
+    submitted_at: '2026-09-29T11:00:00Z',
+    q1_grouping_clarity: 5,
+    q2_reason_identifiable: true,
+    q3_traceability_score: 5,
+    q4_dependency_graph_utility: 5,
+    q5_missing_data_clarity: 4,
+    q6_effort_reduction_pct: 75,
+    q7_confusing_parts: 'Initially understanding why low severity noise was omitted until reviewing noise threshold filter.',
+    q8_suggested_improvements: 'Add direct integration to trigger database connection pool scale-out script from the candidate root cause card.',
+    is_synthetic_demo: true,
+  },
+  {
+    role: 'INCIDENT_COMMANDER',
+    respondent_name: 'Elena Rostova (Chief Incident Commander)',
+    organization: 'ORG-A',
+    submitted_at: '2026-09-29T11:15:00Z',
+    q1_grouping_clarity: 5,
+    q2_reason_identifiable: true,
+    q3_traceability_score: 4,
+    q4_dependency_graph_utility: 5,
+    q5_missing_data_clarity: 5,
+    q6_effort_reduction_pct: 80,
+    q7_confusing_parts: 'Distinguishing contributing hop from root origin was clarified by the downstream blast radius path.',
+    q8_suggested_improvements: 'Include citizen-facing advisory draft button that extracts the affected public endpoints.',
+    is_synthetic_demo: true,
+  },
+  {
+    role: 'PLATFORM_ENGINEER',
+    respondent_name: 'Marcus Chen (Principal Infrastructure)',
+    organization: 'ORG-B',
+    submitted_at: '2026-09-29T11:30:00Z',
+    q1_grouping_clarity: 4,
+    q2_reason_identifiable: true,
+    q3_traceability_score: 4,
+    q4_dependency_graph_utility: 5,
+    q5_missing_data_clarity: 5,
+    q6_effort_reduction_pct: 70,
+    q7_confusing_parts: 'Delay simulator labels are clear, but a timer showing countdown to delayed trace arrival was helpful.',
+    q8_suggested_improvements: 'Provide Prometheus alerting rule export to tune upstream threshold levels.',
+    is_synthetic_demo: true,
+  },
+  {
+    role: 'PARTNER',
+    respondent_name: 'Sarah Lindqvist (Telecom Gateway Lead)',
+    organization: 'ORG-D',
+    submitted_at: '2026-09-29T11:45:00Z',
+    q1_grouping_clarity: 5,
+    q2_reason_identifiable: true,
+    q3_traceability_score: 4,
+    q4_dependency_graph_utility: 4,
+    q5_missing_data_clarity: 4,
+    q6_effort_reduction_pct: 65,
+    q7_confusing_parts: 'Appreciated that internal database logs were sanitized and only shared boundary SMS metrics were shown.',
+    q8_suggested_improvements: 'Allow exporting partner-specific SLA delivery delay CSV.',
+    is_synthetic_demo: true,
   },
 ];

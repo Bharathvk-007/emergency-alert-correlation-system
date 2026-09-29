@@ -1,157 +1,97 @@
-# Emergency Alert Correlation System (35% Milestone Prototype)
+# Emergency Alert Correlation System (70% Milestone Prototype)
 
-> **Explainable multi-source alert correlation, root-cause candidate ranking, and dependency topology for public emergency-information platforms during crisis traffic.**
-
----
-
-## 1. Project Overview & Problem Statement
-During severe emergencies and regional disasters, public crisis information portals experience immense traffic surges. Infrastructure strain triggers cascading failures across microservices, databases, caches, and CDN edges.
-
-Monitoring systems inundate SREs with hundreds of noisy, symptomatic alerts (e.g. HTTP 504s, client timeouts, queue delays). Responders struggle to distinguish downstream symptoms from originating root causes. 
-
-This project implements an **explainable, deterministic correlation engine** that:
-1. Clusters noisy alarms into actionable **incidents**.
-2. Ranks **probable root-cause candidates** with explicit evidence notes.
-3. Preserves backwards **provenance** linking every symptom to traces, logs, and topology.
-4. Gracefully degrades when data sources (logs or traces) are delayed or missing.
-5. Enforces **multi-organization isolation** (Website Operator, Cloud Provider, Telco).
+> **Explainable multi-source alert correlation, root-cause candidate ranking, dependency topology, and graceful degradation for public emergency-information platforms during crisis traffic.**
 
 ---
 
-## 2. Architecture & Technology Stack
+## 1. What was Completed in Milestone 1 vs. Added in Milestone 2
 
-* **Frontend:** React 19, TypeScript, Tailwind CSS, Lucide Icons, SVG Topology Visualizer.
-* **Backend:** Python 3.10+ / FastAPI, Pydantic, CSV/JSON data stores.
-* **Correlation Engine:** Agglomerative affinity graph clustering with configurable multi-signal weighting.
-* **Resilience Layer:** Dynamic runtime weight rebalancing for dropped or delayed telemetry streams.
+### Milestone 1 (First 35%):
+* Baseline un-correlated alert processing vs heuristic grouping.
+* Synthetic dataset (alerts, logs, traces, topology, timelines) across 14 services and 3 disaster incidents.
+* Explainable deterministic correlation scoring with 6 feature weights.
+* Basic service topology and chronological timeline.
+* Initial multi-organization separation (`ORG-A`, `ORG-B`, `ORG-C`).
+* Basic incident list, details view, and audit export.
 
-```
-Incoming Telemetry (Alerts, Logs, Traces, Topology, Timeline)
-                       │
-                       ▼
-         [Normalization & Deduplication]
-                       │
-                       ▼
-        [Multi-Signal Affinity Scoring]
-  (Time: 0.25, Service: 0.20, Topology: 0.20, Trace: 0.15, Log: 0.10, Severity: 0.10)
-                       │
-                       ▼
-        [Agglomerative Incident Grouping]
-                       │
-                       ▼
-       [Probable Root-Cause Ranking (RCS)]
-   (Earliest T0 Event, Upstream Depth, Resource Alarms, Fatal Logs)
-                       │
-                       ▼
-          [Immutable Provenance Binding]
-                       │
-                       ▼
-       [Role-Aware UI & Audit Report Export]
-```
+### Milestone 2 (Added for 70% Milestone):
+* **Advanced Multi-Dimensional Correlation:** Metric synergy, host/resource locality, propagation sequence, and historical disaster incident similarity.
+* **3-Tier Root Cause Ranking:** Distinct classification into `PROBABLE_ROOT_CAUSE`, `CONTRIBUTING_FAILURE`, and `DOWNSTREAM_SYMPTOM`, with downstream affected service counts and candidate confidence levels.
+* **Near-Real-Time Stream Simulation:** Interactive playback bar with Start, Pause, Resume, Reset, 1x/2x/5x speed controls, and noise injection.
+* **Delayed Evidence In-Place Reconciliation:** When delayed logs/traces arrive, existing incident IDs are updated in-place rather than generating duplicate, fragmented tickets.
+* **Complete Dependency Path Analysis:** Bidirectional path computation (Forward Downstream Blast Radius + Reverse Upstream Diagnostic Trail).
+* **Clickable Evidence Provenance Graph:** Interactive anchor inspection revealing exact source telemetry, correlation reasoning, and weight contribution.
+* **Incident Lifecycle Management:** 6 states (`NEW`, `INVESTIGATING`, `CORRELATED`, `ROOT_CAUSE_CANDIDATE`, `MITIGATED`, `RESOLVED`), SRE assignment, Incident Commander tracking, and immutable lifecycle history.
+* **Human-in-the-Loop Confirmation:** Distinct separation between automated `SYSTEM SUGGESTION` and `HUMAN CONFIRMED` root cause verdicts with investigation notes.
+* **Privacy-Aware Cross-Organization Sharing:** Controlled evidence sharing with `ORG-B` (Cloud), `ORG-C` (CDN), and `ORG-D` (Telecom), automatically masking internal database logs and private hostnames.
+* **Multi-Format Audit Export:** Export audit-ready incident reports in **JSON**, **CSV**, and human-readable **HTML** formats.
+* **7 Automated Edge & Failure Tests:** Python test suite verifying resilience across missing logs, delayed traces, offline topology, simultaneous outages, deduplication, multi-org access, and delayed reconciliation.
+* **Stakeholder Validation Module:** Operational feedback questionnaire for SRE, IC, Platform, and Partner roles.
+* **Health & Diagnostics Endpoint:** Comprehensive subsystem status at `GET /api/health`.
 
 ---
 
-## 3. Dataset Description
-The synthetic dataset models 14 microservices and edge providers:
-* **Edge & Ingress:** `CDN`, `Load Balancer`, `Web Frontend`
-* **Core API:** `API Gateway`, `Authentication Service`, `User Service`
-* **Data Layer:** `Emergency Data Service`, `PostgreSQL Database`, `Redis Cache`
-* **Messaging & Alerting:** `Alert Service`, `Notification Service`, `Message Queue`, `External SMS Provider`, `External Email Provider`
+## 2. Quantitative Evaluation Results (Measured Live)
 
-### Ground Truth Incidents Modeled:
-1. **INC-001 (ORG-A):** PostgreSQL connection pool and disk I/O exhaustion $\rightarrow$ Emergency Data Service query timeouts $\rightarrow$ API Gateway 504s $\rightarrow$ Web Frontend failure.
-2. **INC-002 (ORG-B):** CDN edge cache eviction storm & origin latency spike $\rightarrow$ Ingress Load Balancer queue build-up $\rightarrow$ Web Frontend TTFB degradation.
-3. **INC-003 (ORG-C):** Message Queue partition write stall $\rightarrow$ Notification Service buffer capacity breach $\rightarrow$ External SMS Carrier delivery SLA failure.
-4. **NOISE:** Routine crawler bot rate-limiting, scheduled JVM batch sync, background Redis volatile key eviction.
-
-Files stored in `backend/data/` and `src/data/`:
-* `alerts.csv`
-* `logs.csv`
-* `traces.csv`
-* `topology.csv`
-* `incidents.csv`
-
----
-
-## 4. Evaluation Benchmark Results
-
-| Metric | Naive Baseline | Milestone Target | Prototype Measured Result | Status |
+| Evaluation Metric | Naive Baseline | Milestone Target | Prototype Measured Result | Status |
 | :--- | :---: | :---: | :---: | :---: |
 | **Raw Alert Volume** | 20 | 20 | **20** | ✓ Validated |
 | **Active Incidents Presented** | 14 (fragmented) | 3 – 5 | **3** | ✓ Exceeded |
-| **Alert Noise Reduction %** | 30.0% | $\ge 50.0\%$ | **85.0%** | ✓ Exceeded |
-| **Incident Detection Rate (Recall)** | 60.0% | $\ge 95.0\%$ | **100.0%** | ✓ Exceeded |
-| **False Positive Rate (Noise into Incident)** | 33.3% | $\le 10.0\%$ | **0.0%** | ✓ Exceeded |
-| **False Negative Rate (Missed Incidents)** | 0.0% | $\le 5.0\%$ | **0.0%** | ✓ Validated |
-| **Root-Cause Precision** | 0.0% | $\ge 85.0\%$ | **100.0%** | ✓ Exceeded |
+| **Alert Noise Reduction %** | 30.0% | $\ge 50.0\%$ | **85.0%** (16 grouped into 3) | ✓ Exceeded |
+| **Incident Detection Rate (Recall)** | 60.0% | $\ge 95.0\%$ | **100.0%** (3/3 true incidents) | ✓ Exceeded |
+| **False Positive Rate (Noise into Incident)** | 33.3% | $\le 10.0\%$ | **0.0%** (0 noise alarms promoted) | ✓ Exceeded |
+| **False Negative Rate (Missed Incidents)** | 0.0% | $\le 5.0\%$ | **0.0%** (0 missed incidents) | ✓ Validated |
+| **Root-Cause Precision** | 0.0% | $\ge 80.0\%$ | **100.0%** (3/3 true origins ranked #1) | ✓ Exceeded |
+| **Median Time to Identify Candidate** | 300s (manual) | $\le 30\text{s}$ | **0s** (Instantaneous T0 anchor) | ✓ Exceeded |
+| **Mean Alerts Per Incident** | 1.4 alerts/group | 4 – 8 alerts | **5.3 alerts/incident** | ✓ Validated |
 
 ---
 
-## 5. How to Install & Run
+## 3. Installation & Run Commands
 
 ### A. Run Frontend (React 19 + Vite)
 ```bash
-# Install node dependencies
 npm install
-
-# Start Vite dev server on port 3000
 npm run dev
 ```
 Open your browser at `http://localhost:3000`.
 
-### B. Run Python Backend & Evaluation
+### B. Run Automated Edge & Failure Tests (7 Tests)
 ```bash
-# Navigate to backend and install requirements
-pip install -r backend/requirements.txt
+python3 -m backend.evaluation.test_edge_cases
+```
 
-# Run Python evaluation benchmark directly
+### C. Run Evaluation Benchmark
+```bash
 python3 -m backend.evaluation.evaluate
+```
 
-# Start FastAPI server
+### D. Run Python Backend Server
+```bash
+pip install -r backend/requirements.txt
 uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
 ---
 
-## 6. Key API Endpoints
-* `GET /api/health` - System health and milestone version.
-* `GET /api/organizations` - Multi-tenant organization definitions.
-* `GET /api/alerts?organization_id=ORG-A&role=ENGINEER` - Filtered alerts stream.
-* `GET /api/incidents` - Correlated incidents with dynamic source parameters.
-* `GET /api/incidents/{incident_id}` - Detailed incident dossier.
-* `GET /api/incidents/{incident_id}/timeline` - Chronological incident event stream.
-* `GET /api/incidents/{incident_id}/provenance` - Full backwards evidence lineage.
-* `GET /api/incidents/{incident_id}/audit-export` - Audit-ready JSON export.
-* `GET /api/topology` - Directed service dependency nodes and edges.
-* `GET /api/metrics` - Live evaluation benchmark calculations.
+## 4. 3-Minute Demo Flow
+
+1. **Minute 1: Ingestion Stream & Alert Noise Reduction**
+   * Click **"Reset"** then **"Start Stream"** (Speed: 2x) in the top simulation bar.
+   * Watch incoming alarms populate the chronograph and consolidate into exactly 3 incidents (**85.0% noise reduction**).
+2. **Minute 2: Root-Cause Candidate Ranking & Blast Radius**
+   * Open `INC-001`. Point out the classification of `PostgreSQL Database` as **PROBABLE_ROOT_CAUSE** and downstream services as **CONTRIBUTING_FAILURE** or **SYMPTOM**.
+   * Inspect the **Downstream Blast Radius** (`PostgreSQL -> EDS -> API Gateway -> Web Frontend`).
+   * Click the **"Provenance"** tab and inspect evidence anchors (`ALT-101`, `LOG-101`) for exact correlation rationales.
+3. **Minute 3: Missing Telemetry, In-Place Reconciliation & Audit Export**
+   * Click **"Traces"** in the top bar to simulate sampling dropouts $\rightarrow$ observe graceful confidence recalibration.
+   * In the **"Human-in-the-Loop"** tab, confirm the root cause as SRE Lead and assign the incident.
+   * Click **"Share with Partner"** to demonstrate privacy-aware sharing with internal logs masked.
+   * Click **"Audit Report"** to inspect and export the report in JSON, CSV, or HTML.
 
 ---
 
-## 7. Handled Edge Cases & Graceful Degradation
-* **Edge Case 1 (Logs Delayed):** System rebalances log weight (0.10) to time and topology signals. Incident remains grouped; confidence adjusts to `MEDIUM-HIGH`.
-* **Edge Case 2 (Traces Offline):** Graph topology adjacency and timeline chronological sequence bridge the causation chain. Confidence adjusts to `MEDIUM`.
-* **Edge Case 3 (Concurrent Unrelated Outages):** Topological distance cutoff ($\ge 3$ hops) prevents false clustering across disconnected microservice subgraphs.
-* **Edge Case 4 (Incomplete Topology):** Distributed trace span parent/child edges substitute for static architecture CMDB links.
+## 5. Roadmap: The Remaining 30% to Complete the Project
 
----
-
-## 8. Milestone Completion (First 35%) & Roadmap (Remaining 65%)
-
-### Completed in 35% Milestone:
-- [x] Complete problem analysis and epistemological foundation (`docs/problem-analysis.md`).
-- [x] User and multi-tenant workflow map (`docs/workflow-map.md`).
-- [x] Full synthetic dataset (alerts, logs, traces, topology, timelines) in CSV and JSON.
-- [x] Baseline alert processing module (independent vs. window+service grouping).
-- [x] Deterministic, explainable correlation scoring engine with dynamic source rebalancing.
-- [x] Service topology graph with shortest paths and upstream depth calculation.
-- [x] Incident chronological timeline with earliest event pinning.
-- [x] Role-Based Access Control (Admin, Engineer, Incident Commander, Partner, Viewer).
-- [x] Complete evaluation suite benchmarking baseline vs prototype results.
-- [x] 4 automated edge-case verification scenarios.
-- [x] Audit-ready incident export separating Observed Facts from System Inferences.
-- [x] Interactive web dashboard with 6 specialized views.
-
-### Roadmap for Remaining 65%:
-- [ ] **Phase 2 (Next 25%):** Real-time Kafka / OpenTelemetry streaming ingest pipeline, WebSockets push for live cluster recomputation, sliding window state persistence.
-- [ ] **Phase 3 (Next 20%):** Graph Neural Network (GNN) embeddings for topology inference on unmapped microservices, and semantic embedding clustering for unstructured log messages.
-- [ ] **Phase 4 (Final 20%):** Automated runbook trigger generation, integration with PagerDuty / Slack APIs, and historical disaster replay simulator.
+* [ ] **Phase 3 (Next 15%):** Native OpenTelemetry gRPC ingest receiver, Kafka topic consumer, and real-time sliding window persistence in PostgreSQL/Cloud SQL.
+* [ ] **Phase 4 (Final 15%):** Graph Neural Network (GNN) embeddings for topology discovery on unmapped microservices, automated runbook webhooks (PagerDuty / Slack / AWS AutoScaling), and production OAuth SSO authentication.

@@ -1,7 +1,7 @@
 """
-Deterministic & Explainable Alert Correlation Engine.
+Deterministic & Explainable Alert Correlation Engine (Milestone 2 - 70%).
 Groups incoming alerts into incidents, evaluates probable root-cause candidates,
-preserves provenance, and supports graceful degradation when telemetry streams are missing or delayed.
+preserves provenance, and supports graceful degradation and delayed evidence reconciliation.
 """
 
 from typing import Dict, Any, List, Set, Optional
@@ -15,7 +15,7 @@ class CorrelationEngine:
     def __init__(
         self,
         scoring: Optional[CorrelationScoring] = None,
-        affinity_threshold: float = 0.48,
+        affinity_threshold: float = 0.46,
     ):
         self.scoring = scoring or CorrelationScoring()
         self.topology = TopologyGraph()
@@ -38,10 +38,8 @@ class CorrelationEngine:
         traces: List[Dict[str, Any]],
         timeline_events: List[Dict[str, Any]],
         data_sources_available: Optional[Dict[str, bool]] = None,
+        existing_incidents: Optional[List[Dict[str, Any]]] = None,
     ) -> List[Dict[str, Any]]:
-        """
-        Executes multi-source correlation over incoming alerts.
-        """
         sources_status = data_sources_available or {
             "alerts": True,
             "logs": True,
@@ -50,14 +48,11 @@ class CorrelationEngine:
             "timeline": True,
         }
 
-        # Filter logs and traces if disabled
         active_logs = logs if sources_status.get("logs", True) else []
         active_traces = traces if sources_status.get("traces", True) else []
         active_timeline = timeline_events if sources_status.get("timeline", True) else []
 
-        # Map trace IDs to services
         trace_to_services: Dict[str, Set[str]] = {}
-        trace_to_alerts: Dict[str, Set[str]] = {}
         for trc in active_traces:
             tid = trc.get("trace_id")
             if tid:
@@ -65,7 +60,6 @@ class CorrelationEngine:
                     trace_to_services[tid] = set()
                 trace_to_services[tid].add(trc.get("service", ""))
 
-        # Cluster alerts using agglomerative affinity graph
         n = len(alerts)
         clusters: List[List[int]] = []
         visited = set()
@@ -82,26 +76,21 @@ class CorrelationEngine:
                 a1 = alerts[i]
                 a2 = alerts[j]
 
-                # Check shared trace
                 shared_trace = False
                 for tid, s_set in trace_to_services.items():
                     if a1.get("service") in s_set and a2.get("service") in s_set:
-                        # also verify temporal match within trace
                         shared_trace = True
                         break
 
-                # Check log match
                 log_match = False
                 if active_logs:
-                    # check if errors exist for both services in similar time window
                     svc1 = a1.get("service")
                     svc2 = a2.get("service")
-                    logs_s1 = [l for l in active_logs if l.get("service") == svc1]
-                    logs_s2 = [l for l in active_logs if l.get("service") == svc2]
+                    logs_s1 = any(l.get("service") == svc1 for l in active_logs)
+                    logs_s2 = any(l.get("service") == svc2 for l in active_logs)
                     if logs_s1 and logs_s2:
                         log_match = True
 
-                # Topological distance
                 topo_dist = (
                     self.topology.shortest_distance(a1.get("service", ""), a2.get("service", ""))
                     if sources_status.get("topology", True)
@@ -118,55 +107,74 @@ class CorrelationEngine:
 
             clusters.append(current_cluster)
 
-        # Build incident objects
         incidents: List[Dict[str, Any]] = []
         inc_counter = 1
+        past_incidents = existing_incidents or []
 
         for cluster_indices in clusters:
             cluster_alerts = [alerts[idx] for idx in cluster_indices]
-            # Ignore single low-severity noise alerts from creating major incidents
             if len(cluster_alerts) == 1 and cluster_alerts[0].get("severity") in ("LOW", "INFO"):
                 continue
-
-            inc_id = f"INC-{inc_counter:03d}"
-            inc_counter += 1
 
             services = sorted(list(set(a.get("service", "") for a in cluster_alerts)))
             primary_org = cluster_alerts[0].get("organization_id", "ORG-A")
 
-            # Collect symptoms
+            # Check existing match for delayed evidence reconciliation
+            existing_match = None
+            for old_inc in past_incidents:
+                if any(s in old_inc.get("services", []) for s in services):
+                    existing_match = old_inc
+                    break
+
+            inc_id = existing_match["incident_id"] if existing_match else f"INC-{inc_counter:03d}"
+            if not existing_match:
+                inc_counter += 1
+
             symptoms = []
+            contributing = []
             for a in cluster_alerts:
-                symptoms.append(f"{a.get('service')}: {a.get('message')}")
+                msg = f"{a.get('service')}: {a.get('message')}"
+                if a.get("alert_type") in ("RESOURCE_EXHAUSTION", "STATE_CHANGE") or str(a.get("is_root_cause_indicator", "")).lower() == "true":
+                    contributing.append(msg)
+                else:
+                    symptoms.append(msg)
 
-            # Collect linked traces and logs
-            linked_traces = []
-            for trc in active_traces:
-                if trc.get("service") in services:
-                    linked_traces.append(trc.get("trace_id"))
-            linked_traces = sorted(list(set(linked_traces)))
+            linked_traces = sorted(list(set(
+                trc.get("trace_id") for trc in active_traces if trc.get("service") in services
+            )))
+            linked_logs = sorted(list(set(
+                log.get("log_id") for log in active_logs if log.get("service") in services
+            )))
 
-            linked_logs = []
-            for log in active_logs:
-                if log.get("service") in services:
-                    linked_logs.append(log.get("log_id"))
-            linked_logs = sorted(list(set(linked_logs)))
-
-            # Evaluate Root Cause Candidates
             candidates = self._evaluate_root_cause_candidates(
                 services, cluster_alerts, active_logs, active_traces, active_timeline
             )
 
-            # Determine confidence level
             confidence, conf_label = self._determine_confidence(sources_status, cluster_alerts)
+            lead_candidate = candidates[0]["candidate"] if candidates else (services[0] if services else "Unknown")
 
-            # Correlation explanation
-            lead_candidate = candidates[0]["candidate"] if candidates else "Unknown"
             explanation = self._build_explanation(
-                inc_id, cluster_alerts, lead_candidate, sources_status, services
+                inc_id, cluster_alerts, lead_candidate, sources_status, services, existing_match is not None
             )
 
-            # Provenance recording
+            blast_radius = self.topology.get_downstream_blast_radius(lead_candidate)
+            reverse_path = self.topology.get_reverse_upstream_path(services[-1], lead_candidate) if services else [lead_candidate]
+
+            # Detailed evidence anchors
+            detailed_evidence = []
+            for a in cluster_alerts:
+                detailed_evidence.append({
+                    "id": a.get("alert_id"),
+                    "type": "ALERT",
+                    "source": a.get("source"),
+                    "timestamp": a.get("timestamp"),
+                    "service": a.get("service"),
+                    "organization": a.get("organization_id"),
+                    "description": a.get("message"),
+                    "correlation_reason": f"Emitted {a.get('severity')} alarm on metric {a.get('metric')}",
+                    "weight_contribution": 0.35 if a.get("severity") == "CRITICAL" else 0.20,
+                })
+
             provenance = self.provenance_tracker.create_provenance(
                 incident_id=inc_id,
                 organization_id=primary_org,
@@ -192,28 +200,40 @@ class CorrelationEngine:
                     "active_weights": self.scoring.__dict__,
                 },
                 timestamps={
-                    "created_at": datetime.utcnow().isoformat() + "Z",
+                    "created_at": existing_match["created_at"] if existing_match else datetime.utcnow().isoformat() + "Z",
                     "earliest_alert": cluster_alerts[0].get("timestamp"),
                     "latest_alert": cluster_alerts[-1].get("timestamp"),
+                    "last_reconciled_at": datetime.utcnow().isoformat() + "Z" if existing_match else None,
                 },
                 data_sources_used=sources_status,
             )
 
-            # Calculate overall severity
             severities = [a.get("severity") for a in cluster_alerts]
             inc_severity = "CRITICAL" if "CRITICAL" in severities else ("HIGH" if "HIGH" in severities else "MEDIUM")
+
+            lifecycle_history = existing_match.get("lifecycle_history", []) if existing_match else [
+                {
+                    "timestamp": cluster_alerts[0].get("timestamp"),
+                    "from_status": "NEW",
+                    "to_status": "CORRELATED",
+                    "actor": "CorrelationEngine",
+                    "actor_role": "ADMIN",
+                    "note": f"Clustered {len(cluster_alerts)} alerts",
+                }
+            ]
 
             incidents.append({
                 "incident_id": inc_id,
                 "title": f"{lead_candidate} degradation impacting {len(services)} services",
                 "severity": inc_severity,
-                "status": "ACTIVE",
+                "status": existing_match.get("status", "CORRELATED") if existing_match else "CORRELATED",
                 "organization_id": primary_org,
                 "services": services,
                 "alert_count": len(cluster_alerts),
                 "alerts": cluster_alerts,
                 "symptoms": symptoms,
-                "probable_root_cause": lead_candidate,
+                "contributing_failures": contributing,
+                "probable_root_cause": existing_match.get("human_confirmed_root_cause") if existing_match and existing_match.get("human_confirmed_root_cause") else lead_candidate,
                 "probable_root_cause_candidates": candidates,
                 "confidence_score": confidence,
                 "confidence_label": conf_label,
@@ -222,6 +242,14 @@ class CorrelationEngine:
                 "linked_logs": linked_logs,
                 "data_sources_status": sources_status,
                 "provenance": provenance,
+                "assigned_to": existing_match.get("assigned_to", "Unassigned (SRE Pool)") if existing_match else "Unassigned (SRE Pool)",
+                "incident_commander": existing_match.get("incident_commander", "Alex Rivera") if existing_match else "Alex Rivera",
+                "created_at": existing_match.get("created_at", cluster_alerts[0].get("timestamp")) if existing_match else cluster_alerts[0].get("timestamp"),
+                "updated_at": datetime.utcnow().isoformat() + "Z",
+                "lifecycle_history": lifecycle_history,
+                "blast_radius_path": blast_radius,
+                "reverse_symptom_path": reverse_path,
+                "shared_with": existing_match.get("shared_with", []) if existing_match else [],
             })
 
         return incidents
@@ -234,13 +262,6 @@ class CorrelationEngine:
         traces: List[Dict[str, Any]],
         timeline: List[Dict[str, Any]],
     ) -> List[Dict[str, Any]]:
-        """
-        Ranks candidate root causes using:
-        1. Earliest event timestamp within the incident cluster window (weight 0.40)
-        2. Root cause indicator in alerts or topology origin (weight 0.35)
-        3. Criticality of resource exhaustion / error rate alert (weight 0.15)
-        4. Log fatal/error severity in cluster window (weight 0.10)
-        """
         if not services or not alerts:
             return []
 
@@ -248,7 +269,6 @@ class CorrelationEngine:
         cluster_start = min(alert_times) - 60.0
         cluster_end = max(alert_times) + 60.0
 
-        # Filter logs and timeline strictly to this cluster's temporal span
         cluster_logs = [
             l for l in logs
             if l.get("service") in services
@@ -282,15 +302,11 @@ class CorrelationEngine:
 
         candidates = []
         for s in services:
-            # Time delta score: 1.0 for the earliest, decaying smoothly
             delta = max(0.0, earliest_per_service[s] - min_time)
             time_score = max(0.1, 1.0 - (delta / 45.0))
-
-            # Origin/depth score: service with earliest event or root origin
             is_earliest_in_cluster = (delta == 0.0)
             origin_score = 0.95 if is_earliest_in_cluster else 0.40
 
-            # Resource exhaustion / severe alert check
             has_root_indicator = any(
                 a.get("service") == s and (
                     str(a.get("is_root_cause_indicator", "")).lower() == "true"
@@ -300,7 +316,6 @@ class CorrelationEngine:
             )
             resource_score = 1.0 if has_root_indicator else 0.4
 
-            # Fatal log check in cluster
             has_fatal_log = any(
                 l.get("service") == s and l.get("level") in ("FATAL", "ERROR")
                 for l in cluster_logs
@@ -314,23 +329,52 @@ class CorrelationEngine:
                 + 0.10 * log_evidence_score
             )
 
+            supporting_alerts = [a.get("alert_id") for a in alerts if a.get("service") == s]
+            supporting_logs = [l.get("log_id") for l in cluster_logs if l.get("service") == s]
+            supporting_traces = [t.get("trace_id") for t in traces if t.get("service") == s]
+
+            downstream = self.topology.get_downstream_blast_radius(s)
+            dep_path = self.topology.find_path(s, services[-1])
+
             evidence_notes = []
             if delta == 0:
-                evidence_notes.append("First observed anomaly timestamp in incident cluster")
+                evidence_notes.append("First observed anomaly timestamp in incident cluster (T0)")
             else:
                 evidence_notes.append(f"Anomaly observed +{int(delta)}s after initial cluster trigger")
 
             if has_root_indicator:
-                evidence_notes.append("Triggered root-cause indicator / RESOURCE_EXHAUSTION alarm")
+                evidence_notes.append("Triggered critical root-cause indicator / RESOURCE_EXHAUSTION alarm")
             if has_fatal_log:
                 evidence_notes.append("Associated FATAL/ERROR log lines detected in cluster window")
+            evidence_notes.append(f"Impacts {len(downstream)} downstream consumer services")
+
+            classification = "SYMPTOM"
+            if total_rc_score >= 0.85 or is_earliest_in_cluster:
+                classification = "PROBABLE_ROOT_CAUSE"
+            elif total_rc_score >= 0.55 or has_root_indicator or has_fatal_log:
+                classification = "CONTRIBUTING_FAILURE"
+
+            conf_label = (
+                "HIGH CONFIDENCE CANDIDATE"
+                if total_rc_score >= 0.8
+                else ("MEDIUM CONFIDENCE CANDIDATE" if total_rc_score >= 0.5 else "LOW CONFIDENCE CANDIDATE")
+            )
 
             candidates.append({
                 "candidate": s,
                 "score": round(total_rc_score, 3),
                 "confidence_level": "HIGH" if total_rc_score >= 0.8 else ("MEDIUM" if total_rc_score >= 0.5 else "LOW"),
+                "confidence_label": conf_label,
+                "classification": classification,
                 "evidence_notes": evidence_notes,
+                "evidence_count": len(supporting_alerts) + len(supporting_logs) + len(supporting_traces),
                 "time_delta_sec": int(delta),
+                "downstream_affected_count": len(downstream),
+                "downstream_services": downstream,
+                "dependency_path": dep_path,
+                "supporting_alerts": supporting_alerts,
+                "supporting_logs": supporting_logs,
+                "supporting_traces": supporting_traces,
             })
 
         candidates.sort(key=lambda x: x["score"], reverse=True)
@@ -359,15 +403,17 @@ class CorrelationEngine:
         root_cause: str,
         sources: Dict[str, bool],
         services: List[str],
+        is_reconciled: bool = False,
     ) -> str:
         sources_str = ", ".join([k for k, v in sources.items() if v])
         missing = [k for k, v in sources.items() if not v]
         missing_note = f" (Warning: {', '.join(missing)} offline/delayed)" if missing else ""
+        rec_note = " [Reconciled delayed telemetry]" if is_reconciled else ""
 
         return (
             f"Incident {inc_id} was grouped from {len(alerts)} alerts across {len(services)} services "
             f"({', '.join(services)}) based on temporal proximity and topological dependency paths. "
-            f"Evidence sources utilized: {sources_str}{missing_note}. "
-            f"'{root_cause}' is evaluated as the leading probable root-cause candidate due to initiating "
-            f"alarms preceding downstream symptom propagation."
+            f"Evidence sources: {sources_str}{missing_note}.{rec_note} "
+            f"'{root_cause}' is evaluated as the leading candidate root cause because initiating "
+            f"alarms preceded downstream symptom propagation."
         )

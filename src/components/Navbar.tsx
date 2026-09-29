@@ -7,7 +7,7 @@ import {
   FileCheck2,
   BookOpen,
   FlaskConical,
-  ExternalLink,
+  Users,
 } from 'lucide-react';
 
 export type ActiveTab =
@@ -17,6 +17,7 @@ export type ActiveTab =
   | 'topology'
   | 'evaluation'
   | 'edge_cases'
+  | 'validation'
   | 'docs';
 
 interface NavbarProps {
@@ -47,8 +48,8 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span className="font-bold text-white tracking-tight text-base sm:text-lg">
                 Emergency Alert Correlation
               </span>
-              <span className="text-[10px] uppercase font-mono font-semibold px-2 py-0.5 rounded bg-sky-950/80 text-sky-300 border border-sky-800/80">
-                35% Milestone
+              <span className="text-[10px] uppercase font-mono font-semibold px-2 py-0.5 rounded bg-emerald-950/80 text-emerald-300 border border-emerald-800/80">
+                70% Milestone
               </span>
             </div>
             <p className="text-xs text-slate-400 hidden sm:block">
@@ -121,7 +122,19 @@ export const Navbar: React.FC<NavbarProps> = ({
             }`}
           >
             <span className="w-2 h-2 rounded-full bg-amber-400"></span>
-            <span>Edge Cases</span>
+            <span>7 Edge Tests</span>
+          </button>
+
+          <button
+            onClick={() => onTabChange('validation')}
+            className={`px-3 py-2 rounded-md text-xs sm:text-sm font-medium transition-colors flex items-center gap-1.5 ${
+              activeTab === 'validation'
+                ? 'bg-slate-800 text-white shadow-sm'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+            }`}
+          >
+            <Users className="w-4 h-4 text-sky-400" />
+            <span>Operator Feedback</span>
           </button>
 
           <button

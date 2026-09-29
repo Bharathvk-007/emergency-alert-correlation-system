@@ -1,7 +1,7 @@
 """
-Service Dependency Graph & Topology Engine.
+Service Dependency Graph & Topology Engine (Milestone 2 - 70%).
 Maintains directed acyclic and cyclic service topology, computes shortest paths,
-and identifies upstream failure propagation directionality.
+downstream blast radius, and reverse causal symptom paths.
 """
 
 from typing import Dict, List, Set, Tuple, Optional
@@ -10,9 +10,8 @@ from collections import deque
 
 class TopologyGraph:
     def __init__(self):
-        # directed edges: u -> v means u depends on v, or request flows from u to v
         self.adj_directed: Dict[str, Set[str]] = {}
-        # undirected for distance computation
+        self.adj_reverse: Dict[str, Set[str]] = {}
         self.adj_undirected: Dict[str, Set[str]] = {}
         self.edges: List[Dict[str, str]] = []
         self.nodes: Set[str] = set()
@@ -30,6 +29,10 @@ class TopologyGraph:
             self.adj_directed[source] = set()
         self.adj_directed[source].add(target)
 
+        if target not in self.adj_reverse:
+            self.adj_reverse[target] = set()
+        self.adj_reverse[target].add(source)
+
         if source not in self.adj_undirected:
             self.adj_undirected[source] = set()
         if target not in self.adj_undirected:
@@ -38,7 +41,6 @@ class TopologyGraph:
         self.adj_undirected[target].add(source)
 
     def shortest_distance(self, u: str, v: str) -> int:
-        """Returns the shortest undirected hop distance between two services. Returns 999 if disconnected."""
         if u == v:
             return 0
         if u not in self.adj_undirected or v not in self.adj_undirected:
@@ -58,7 +60,6 @@ class TopologyGraph:
         return 999
 
     def find_path(self, start: str, end: str) -> List[str]:
-        """Finds directed or undirected path between start and end."""
         if start == end:
             return [start]
         queue = deque([[start]])
@@ -76,13 +77,26 @@ class TopologyGraph:
                     queue.append(new_path)
         return []
 
+    def get_downstream_blast_radius(self, root_service: str) -> List[str]:
+        """Calculates all downstream consumer services affected if root_service degrades."""
+        reachable = []
+        queue = deque([root_service])
+        visited = {root_service}
+        while queue:
+            curr = queue.popleft()
+            consumers = self.adj_reverse.get(curr, set())
+            for c in consumers:
+                if c not in visited:
+                    visited.add(c)
+                    reachable.append(c)
+                    queue.append(c)
+        return reachable
+
+    def get_reverse_upstream_path(self, symptom_service: str, root_service: str) -> List[str]:
+        """Traces from symptom back up to candidate root cause."""
+        return self.find_path(symptom_service, root_service)
+
     def get_upstream_depth(self, service: str) -> int:
-        """
-        Calculates depth from edge ingress.
-        Services deeper in the architecture (e.g. databases, message queues)
-        have higher depth and are common root causes for downstream timeouts.
-        """
-        # Ingress roots: CDN, Load Balancer
         roots = {"CDN", "Load Balancer"}
         min_dist = 999
         for root in roots:

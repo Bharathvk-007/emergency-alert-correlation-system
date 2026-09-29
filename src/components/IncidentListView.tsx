@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Incident, UserRole, OrganizationId } from '../types';
+import { Incident, UserRole, OrganizationId, IncidentStatus } from '../types';
 import {
   AlertTriangle,
   Search,
@@ -9,6 +9,8 @@ import {
   Shield,
   Layers,
   ChevronRight,
+  Share2,
+  CheckCircle2,
 } from 'lucide-react';
 
 interface IncidentListViewProps {
@@ -17,6 +19,8 @@ interface IncidentListViewProps {
   currentOrg: OrganizationId;
   onSelectIncident: (id: string) => void;
   onExportAudit: (incident: Incident) => void;
+  onOpenShare: (incident: Incident) => void;
+  onUpdateStatus: (incidentId: string, status: IncidentStatus) => void;
 }
 
 export const IncidentListView: React.FC<IncidentListViewProps> = ({
@@ -25,9 +29,12 @@ export const IncidentListView: React.FC<IncidentListViewProps> = ({
   currentOrg,
   onSelectIncident,
   onExportAudit,
+  onOpenShare,
+  onUpdateStatus,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [severityFilter, setSeverityFilter] = useState<string>('ALL');
+  const [statusFilter, setStatusFilter] = useState<string>('ALL');
 
   const filtered = incidents.filter((inc) => {
     const matchesSearch =
@@ -39,7 +46,10 @@ export const IncidentListView: React.FC<IncidentListViewProps> = ({
     const matchesSeverity =
       severityFilter === 'ALL' || inc.severity === severityFilter;
 
-    return matchesSearch && matchesSeverity;
+    const matchesStatus =
+      statusFilter === 'ALL' || inc.status === statusFilter;
+
+    return matchesSearch && matchesSeverity && matchesStatus;
   });
 
   return (
@@ -80,6 +90,21 @@ export const IncidentListView: React.FC<IncidentListViewProps> = ({
             <option value="HIGH">High</option>
             <option value="MEDIUM">Medium</option>
           </select>
+
+          {/* Status Filter */}
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-300 focus:outline-none focus:ring-1 focus:ring-sky-500"
+          >
+            <option value="ALL">All Lifecycle States</option>
+            <option value="NEW">NEW</option>
+            <option value="INVESTIGATING">INVESTIGATING</option>
+            <option value="CORRELATED">CORRELATED</option>
+            <option value="ROOT_CAUSE_CANDIDATE">ROOT_CAUSE_CANDIDATE</option>
+            <option value="MITIGATED">MITIGATED</option>
+            <option value="RESOLVED">RESOLVED</option>
+          </select>
         </div>
       </div>
 
@@ -91,12 +116,13 @@ export const IncidentListView: React.FC<IncidentListViewProps> = ({
               <tr>
                 <th className="py-3 px-4">Incident ID</th>
                 <th className="py-3 px-4">Severity</th>
+                <th className="py-3 px-4">Lifecycle State</th>
                 <th className="py-3 px-4">Affected Services</th>
                 <th className="py-3 px-4 text-center">Alerts</th>
                 <th className="py-3 px-4">Probable Root Cause</th>
                 <th className="py-3 px-4">Confidence</th>
+                <th className="py-3 px-4">Assigned To</th>
                 <th className="py-3 px-4">Tenant</th>
-                <th className="py-3 px-4">Status</th>
                 <th className="py-3 px-4 text-right">Actions</th>
               </tr>
             </thead>
@@ -123,6 +149,11 @@ export const IncidentListView: React.FC<IncidentListViewProps> = ({
                       {inc.severity}
                     </span>
                   </td>
+                  <td className="py-3.5 px-4">
+                    <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-slate-800 text-slate-300 border border-slate-700">
+                      {inc.status}
+                    </span>
+                  </td>
                   <td className="py-3.5 px-4 max-w-xs">
                     <div className="flex flex-wrap gap-1">
                       {inc.services.map((svc) => (
@@ -139,9 +170,16 @@ export const IncidentListView: React.FC<IncidentListViewProps> = ({
                     {inc.alert_count}
                   </td>
                   <td className="py-3.5 px-4">
-                    <span className="font-mono font-bold text-amber-300">
-                      {inc.probable_root_cause}
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-mono font-bold text-amber-300">
+                        {inc.human_confirmed_root_cause || inc.probable_root_cause}
+                      </span>
+                      {inc.human_confirmed_root_cause && (
+                        <span className="text-[9px] px-1 py-0.2 rounded bg-emerald-950 text-emerald-300 font-bold border border-emerald-800">
+                          CONFIRMED
+                        </span>
+                      )}
+                    </div>
                     <span className="block text-[10px] text-slate-500 font-sans">
                       Top score: {inc.probable_root_cause_candidates[0]?.score || '0.9+'}
                     </span>
@@ -159,19 +197,24 @@ export const IncidentListView: React.FC<IncidentListViewProps> = ({
                       {inc.confidence_label} ({Math.round(inc.confidence_score * 100)}%)
                     </span>
                   </td>
+                  <td className="py-3.5 px-4 text-slate-300 text-[11px] truncate max-w-[140px]">
+                    {inc.assigned_to}
+                  </td>
                   <td className="py-3.5 px-4 font-mono text-slate-400">
                     {inc.organization_id}
-                  </td>
-                  <td className="py-3.5 px-4">
-                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-300 border border-slate-700">
-                      {inc.status}
-                    </span>
                   </td>
                   <td
                     className="py-3.5 px-4 text-right"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <div className="flex items-center justify-end gap-1.5">
+                      <button
+                        onClick={() => onOpenShare(inc)}
+                        className="p-1 rounded bg-slate-800 hover:bg-slate-700 text-sky-400 hover:text-white border border-slate-700 transition-colors"
+                        title="Share Incident with Partner"
+                      >
+                        <Share2 className="w-3.5 h-3.5" />
+                      </button>
                       <button
                         onClick={() => onSelectIncident(inc.incident_id)}
                         className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-sky-400 hover:text-sky-300 font-medium text-xs flex items-center gap-1 border border-slate-700 transition-colors"
